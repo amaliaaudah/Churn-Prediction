@@ -1,0 +1,57 @@
+# Uji Model Random Forest dengan Dataset Baru
+
+# Import library
+from google.colab import drive
+import pandas as pd
+import numpy as np
+from sklearn.preprocessing import LabelEncoder
+import joblib
+import pickle
+
+# Mount Google Drive
+drive.mount('/content/drive')
+%cd /content/drive/MyDrive/Prediksi Churn
+
+# === 2. Load Model RF ===
+rf_model = joblib.load('random_forest.pkl')  # Pastikan file ini ada di direktori kerja saat ini
+
+df_new = pd.read_csv('pelanggan_aktif_2024.csv', sep=';')
+print(df_new)
+
+# Salin data untuk preprocessing
+df = df_new.copy()
+
+# === 2. Preprocessing (sama seperti data training) ===
+
+# ===== Preprocessing Sesuai Notebook Lama =====
+# Strip spasi di kolom STATUS
+df['STATUS'] = df['STATUS'].str.strip()
+
+# Rename kolom durasi
+df.rename(columns={'DURASI BERLANGGANAN (BULAN)': 'durasiBulan'}, inplace=True)
+
+# Handle missing values untuk kapasitas
+df['kapasitas'] = df['KAPASITAS'].fillna(df['KAPASITAS'].median())
+
+# Encode fitur kategorikal
+df['tregID'] = LabelEncoder().fit_transform(df['TREG'])
+df['typeID'] = LabelEncoder().fit_transform(df['TYPE'])
+df['kategoriPelangganID'] = LabelEncoder().fit_transform(df['REVENUE CATEGORY'])
+df['status'] = LabelEncoder().fit_transform(df['STATUS'])
+
+# Hapus kolom aslinya
+df.drop(columns=['TREG', 'TYPE', 'REVENUE CATEGORY', 'KAPASITAS', 'STATUS'], inplace=True)
+
+fitur_model = ['durasiBulan', 'kapasitas', 'tregID', 'typeID', 'kategoriPelangganID' ]
+
+X_pred = df[fitur_model]
+y_pred = rf_model.predict(X_pred)
+
+# Tambahkan kolom prediksi ke data awal
+df_new['RF'] = y_pred
+df_new['Berpotensi Churn?'] = df_new['RF'].map({0: 'Tidak Berpotensi Churn', 1: 'Berpotensi Churn'})
+
+# === 8. Simpan hasil prediksi ke file Excel ===
+df_new.to_excel('hasil_prediksi_rf.xlsx', index=False)
+
+print("✅ Prediksi selesai. Hasil disimpan di 'hasil_prediksi_rf.xlsx'")
