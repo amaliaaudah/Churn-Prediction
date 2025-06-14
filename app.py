@@ -54,16 +54,18 @@ if uploaded_file is not None:
     fitur_model = ['durasiBulan', 'kapasitas', 'tregID', 'typeID', 'kategoriPelangganID']
     X_pred = df_processed[fitur_model]
 
-    # Make predictions
+    # Make predictions (binary labels) and probabilities
     y_pred = rf_model.predict(X_pred)
+    y_prob = rf_model.predict_proba(X_pred)[:, 1]  # Probabilities for class '1' (churn)
 
     # Add prediction to original dataframe
     df_new['RF'] = y_pred
+    df_new['Probability Churn'] = y_prob  # Add the churn probability column
     df_new['Berpotensi Churn?'] = df_new['RF'].map({0: 'Tidak Berpotensi Churn', 1: 'Berpotensi Churn'})
 
-    # Show prediction results
+    # Show prediction results interactively
     st.write("Prediction Results:")
-    st.write(df_new)
+    st.dataframe(df_new)  # Use this for an interactive table
 
     # Allow the user to download the prediction result as an Excel file
     @st.cache_data
